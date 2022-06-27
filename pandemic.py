@@ -1,4 +1,5 @@
 import pygame
+import random
 
 pygame.init()
 
@@ -22,13 +23,25 @@ COLORS = {
     "dead": COLOR_DEFINITIONS["grey"]
 }
 
+class Person:
+    def __init__(self):
+        self.x = random.uniform(0, WIDTH)
+        self.y = random.uniform(0, HEIGHT)
+
+    def show(self, size=10):
+        pygame.draw.circle(SCREEN, COLOR_DEFINITIONS["white"], (self.x, self.y), size)
+
+person1 = Person()
+person2 = Person()
+
 # pygame loop
 animating = True
 while animating:
-    # pygame draws things to the screen
-
     # set background color
     SCREEN.fill(COLORS["background"])
+    # pygame draws things to the screen
+    person1.show()
+    person2.show()
     # update the screen
     pygame.display.flip()
 
