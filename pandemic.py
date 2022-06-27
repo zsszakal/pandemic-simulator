@@ -27,12 +27,37 @@ class Person:
     def __init__(self):
         self.x = random.uniform(0, WIDTH)
         self.y = random.uniform(0, HEIGHT)
+        self.dx = 0
+        self.dy = 0
+        self.state = "healthy"
 
     def show(self, size=10):
-        pygame.draw.circle(SCREEN, COLOR_DEFINITIONS["white"], (self.x, self.y), size)
+        pygame.draw.circle(SCREEN, COLORS[self.state], (self.x, self.y), size)
 
-person1 = Person()
-person2 = Person()
+    def move(self, speed=0.01):
+        # adjust position vector
+        self.x += self.dx
+        self.y += self.dy
+        # avoid going out of bounds
+        if self.x >= WIDTH:
+            self.x = WIDTH - 1
+            self.dx *= - 1
+        if self.y >= HEIGHT:
+            self.y = HEIGHT - 1
+            self.dy *= - 1
+        if self.x <= 0:
+            self.x = 1
+            self.dx *= -1
+        if self.y <= 0:
+            self.y = 1
+            self.dy *= -1
+
+        # adjust velocity vector
+        self.dx += random.uniform(-speed, speed)
+        self.dy += random.uniform(-speed, speed)
+
+
+people = [Person () for i in range(10)]
 
 # pygame loop
 animating = True
@@ -40,8 +65,9 @@ while animating:
     # set background color
     SCREEN.fill(COLORS["background"])
     # pygame draws things to the screen
-    person1.show()
-    person2.show()
+    for p in people:
+        p.move()
+        p.show()
     # update the screen
     pygame.display.flip()
 
@@ -51,3 +77,9 @@ while animating:
         # user closes the pygame window
         if event.type == pygame.QUIT:
             animating = False
+
+        # user presses keys on keyboard
+        if event.type == pygame.KEYDOWN:
+            # escape key to close the animation
+            if event.key == pygame.K_ESCAPE:
+                animating = False
