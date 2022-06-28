@@ -66,6 +66,8 @@ class Person:
         self.dx = 0
         self.dy = 0
         self.state = "healthy"
+        self.recovery_counter = 0
+        self.immunity_counter = 0
 
     def show(self, size=10):
         pygame.draw.circle(SCREEN, COLORS[self.state], (self.x, self.y), size)
@@ -92,12 +94,29 @@ class Person:
         self.dx += random.uniform(-speed, speed)
         self.dy += random.uniform(-speed, speed)
 
-    def get_infected(self):
+    def get_infected(self, value=1000):
         self.state = "infected"
+        self.recovery_counter = value
+
+    def recover(self, value=2000):
+        self.recovery_counter -= 1
+        if self.recovery_counter == 0:
+            self.state = "immune"
+            self.immunity_counter = value
+
+    def lose_immunity(self):
+        self.immunity_counter -= 1
+        if self.immunity_counter == 0:
+            self.state = "healthy"
+
+    def die(self, probability=0.00001):                # probability initializing parameter = mortality rate.
+        if random.uniform(0, 1) < probability:     # randomly choosing a number between 0 and 1 (random.uniform(0, 1) will 0.1% likely to be less than 0.001 (currently set to 0.001 = 0.1%)
+            self.state = "dead"
+
 
 
 people = [Person() for i in range(100)]
-people[0].state = "infected"
+people[0].get_infected()
 grid = Grid(people, h_size=200, v_size=200)
 
 # set frame rate
@@ -122,6 +141,14 @@ while animating:
                     dist = math.sqrt((p.x-other.x)**2 + (p.y-other.y)**2)
                     if dist < 20:
                         other.get_infected()
+
+    # have people recover
+    for p in people:
+        if p.state == "infected":
+            p.recover()
+            p.die()
+        elif p.state == "immune":
+            p.lose_immunity()
 
     # update the screen (and the clock)
     clock.tick()
