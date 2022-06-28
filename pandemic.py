@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 pygame.init()
 
@@ -22,6 +23,7 @@ COLORS = {
     "immune": COLOR_DEFINITIONS["blue"],
     "dead": COLOR_DEFINITIONS["grey"]
 }
+
 
 class Person:
     def __init__(self):
@@ -56,9 +58,16 @@ class Person:
         self.dx += random.uniform(-speed, speed)
         self.dy += random.uniform(-speed, speed)
 
+    def get_infected(self):
+        self.state = "infected"
 
-people = [Person () for i in range(10)]
 
+people = [Person() for i in range(1000)]
+people[0].state = "infected"
+
+# set frame rate
+clock = pygame.time.Clock()
+font = pygame.font.Font("freesansbold.ttf", 32)
 # pygame loop
 animating = True
 while animating:
@@ -68,9 +77,23 @@ while animating:
     for p in people:
         p.move()
         p.show()
-    # update the screen
-    pygame.display.flip()
 
+    # infect other people
+    for p in people:
+        if p.state == "infected":
+            for other in people:
+                if other.state == "healthy":
+                    dist = math.sqrt((p.x-other.x)**2 + (p.y-other.y)**2)
+                    if dist < 20:
+                        other.get_infected()
+
+    # update the screen (and the clock)
+    clock.tick()
+    clock_string = str(math.floor(clock.get_fps()))
+    text = font.render(clock_string, True, COLOR_DEFINITIONS["blue"], COLORS["background"])
+    text_box = text.get_rect(topleft=(10, 10))
+    SCREEN.blit(text, text_box)
+    pygame.display.flip()
 
     # track user interaction
     for event in pygame.event.get():
