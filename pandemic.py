@@ -44,14 +44,14 @@ class Grid:
                 self.cells.append(Cell(row, col))
         self.store_people(people)
 
-    def store_people(self,people):
+    def store_people(self, people):
         for p in people:
             row = int(p.y / self.v_size)
             col = int(p.x / self.h_size)
             index = row * self.n_cols + col
             self.cells[index].people.append(p)
 
-    def show(self, width = 1):
+    def show(self, width=1):
         for c in self.cells:
             x = c.col * self.h_size
             y = c.row * self.v_size
@@ -109,15 +109,67 @@ class Person:
         if self.immunity_counter == 0:
             self.state = "healthy"
 
-    def die(self, probability=0.00001):                # probability initializing parameter = mortality rate.
+    def die(self, probability=0.000001):                # probability initializing parameter = mortality rate.
         if random.uniform(0, 1) < probability:     # randomly choosing a number between 0 and 1 (random.uniform(0, 1) will 0.1% likely to be less than 0.001 (currently set to 0.001 = 0.1%)
             self.state = "dead"
 
 
+class Pandemic:
+    def __init__(self,
+                 n_people=500,
+                 size=3,
+                 speed=0.03,
+                 infect_dist=5,
+                 recover_time=1000,
+                 immune_time=1000,
+                 prob_catch=0.1,
+                 prob_death=0.00005
+                 ):
+        self.people = [Person() for i in range(n_people)]
+        self.size = size
+        self.speed = speed
+        self.infect_dist = infect_dist
+        self.recover_time = immune_time
+        self.immune_time = immune_time
+        self.prob_catch = prob_catch
+        self.prob_death = prob_death
+        self.grid = Grid(self.people)
+        self.people[0].get_infected(recover_time)
 
-people = [Person() for i in range(100)]
+    def update_grid(self):
+        self.grid = Grid(self.people)
+
+    def infect_people(self):
+        # infect other people
+        for p in self.people:
+            if p.state == "infected":
+                for other in self.people:
+                    if other.state == "healthy":
+                        dist = math.sqrt((p.x - other.x) ** 2 + (p.y - other.y) ** 2)
+                        if dist < self.infect_dist:
+                            other.get_infected()
+
+    def run(self):
+        self.update_grid()
+        self.infect_people()
+
+        for p in self.people:
+            if p.state == "infected":
+                p.die(self.prob_death)
+                p.recover(self.immune_time)
+                p.move(self.speed)
+                p.show(self.size)
+            elif p.state == "immune":
+                p.lose_immunity()
+            p.move(self.speed)
+            p.show(self.size)
+
+
+pandemic = Pandemic()
+
+"""people = [Person() for i in range(100)]
 people[0].get_infected()
-grid = Grid(people, h_size=200, v_size=200)
+grid = Grid(people, h_size=200, v_size=200)"""
 
 # set frame rate
 clock = pygame.time.Clock()
@@ -127,28 +179,9 @@ animating = True
 while animating:
     # set background color
     SCREEN.fill(COLORS["background"])
-    grid.show()
-    # pygame draws things to the screen
-    for p in people:
-        p.move()
-        p.show()
 
-    # infect other people
-    for p in people:
-        if p.state == "infected":
-            for other in people:
-                if other.state == "healthy":
-                    dist = math.sqrt((p.x-other.x)**2 + (p.y-other.y)**2)
-                    if dist < 20:
-                        other.get_infected()
-
-    # have people recover
-    for p in people:
-        if p.state == "infected":
-            p.recover()
-            p.die()
-        elif p.state == "immune":
-            p.lose_immunity()
+    # run pandemic
+    pandemic.run()
 
     # update the screen (and the clock)
     clock.tick()
