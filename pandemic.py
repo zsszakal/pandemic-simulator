@@ -25,6 +25,40 @@ COLORS = {
 }
 
 
+class Cell:
+    def __init__(self, row, col):
+        self.row = row
+        self.col = col
+        self.people = []
+
+
+class Grid:
+    def __init__(self, people, h_size=20, v_size=20):
+        self.h_size = h_size    # horizontal size
+        self.v_size = v_size    # vertical size
+        self.n_rows = HEIGHT // v_size
+        self.n_cols = WIDTH // h_size
+        self.cells = []
+        for row in range(self.n_rows):
+            for col in range(self.n_cols):
+                self.cells.append(Cell(row, col))
+        self.store_people(people)
+
+    def store_people(self,people):
+        for p in people:
+            row = int(p.y / self.v_size)
+            col = int(p.x / self.h_size)
+            index = row * self.n_cols + col
+            self.cells[index].people.append(p)
+
+    def show(self, width = 1):
+        for c in self.cells:
+            x = c.col * self.h_size
+            y = c.row * self.v_size
+            rect = pygame.Rect(x, y, self.h_size, self.v_size)
+            pygame.draw.rect(SCREEN, COLOR_DEFINITIONS["light_grey"], rect, width=width)
+
+
 class Person:
     def __init__(self):
         self.x = random.uniform(0, WIDTH)
@@ -62,8 +96,9 @@ class Person:
         self.state = "infected"
 
 
-people = [Person() for i in range(1000)]
+people = [Person() for i in range(100)]
 people[0].state = "infected"
+grid = Grid(people, h_size=200, v_size=200)
 
 # set frame rate
 clock = pygame.time.Clock()
@@ -73,6 +108,7 @@ animating = True
 while animating:
     # set background color
     SCREEN.fill(COLORS["background"])
+    grid.show()
     # pygame draws things to the screen
     for p in people:
         p.move()
