@@ -31,6 +31,18 @@ class Cell:
         self.col = col
         self.people = []
 
+    def get_neighboring_cells(self, n_rows, n_cols):
+        index = self.row * n_cols + self.col
+        n = index - n_cols if self.row > 0 else None
+        s = index + n_cols if self.row < n_rows - 1 else None
+        w = index - 1 if self.col > 0 else None
+        e = index + 1 if self.col < n_cols else None
+        nw = index - n_cols - 1 if self.row > 0 and self.col > 0 else None
+        ne = index - n_cols + 1 if self.row > 0 and self.col < n_cols - 1 else None
+        sw = index + n_cols - 1 if self.row < n_rows - 1 and self.col > 0 else None
+        se = index + n_cols + 1 if self.row < n_rows - 1 and self.col < n_cols - 1 else None
+        return [i for i in [index, n, s, e, w, nw, ne, sw, se] if i]
+
 
 class Grid:
     def __init__(self, people, h_size=20, v_size=20):
@@ -123,7 +135,7 @@ class Pandemic:
                  recover_time=1000,
                  immune_time=1000,
                  prob_catch=0.1,
-                 prob_death=0.00005
+                 prob_death=0
                  ):
         self.people = [Person() for i in range(n_people)]
         self.size = size
@@ -133,13 +145,13 @@ class Pandemic:
         self.immune_time = immune_time
         self.prob_catch = prob_catch
         self.prob_death = prob_death
+        self.people[0].get_infected(self.recover_time)
         self.grid = Grid(self.people)
-        self.people[0].get_infected(recover_time)
 
     def update_grid(self):
         self.grid = Grid(self.people)
 
-    def infect_people(self):
+    def slowly_infect_people(self):
         # infect other people
         for p in self.people:
             if p.state == "infected":
@@ -149,47 +161,68 @@ class Pandemic:
                         if dist < self.infect_dist:
                             other.get_infected()
 
+    def infect_people(self):
+        for c in self.grid.cells:
+            # move on if nobody is infected in that cell
+            states = [p.state for p in c.people]
+            if states.count("infected") == 0:
+                continue
+
+            # create lists of all/infected/healthy people in the area (in a grid)
+            people_in_area = []
+            for index in c.get_neighboring_cells(self.grid.n_rows, self.grid.n_cols):
+                people_in_area += self.grid.cells[index].people
+                infected_people = [p for p in people_in_area if p.state == "infected"]
+                healthy_people = [p for p in people_in_area if p.state == "healthy"]
+                if len(healthy_people) == 0:
+                    continue
+
+                # loop through the infected people (and then through the healthy people)
+                for i in infected_people:
+                    for h in healthy_people:
+                        dist = math.sqrt((i.x - h.x) ** 2 + (i.y - h.y) ** 2)
+                        if dist < self.infect_dist:
+                            if random.uniform(0, 1) < self.prob_catch:
+                                h.get_infected(self.recover_time)
+
     def run(self):
         self.update_grid()
-        self.infect_people()
+        self.slowly_infect_people()
 
         for p in self.people:
             if p.state == "infected":
                 p.die(self.prob_death)
                 p.recover(self.immune_time)
-                p.move(self.speed)
-                p.show(self.size)
             elif p.state == "immune":
                 p.lose_immunity()
             p.move(self.speed)
             p.show(self.size)
 
+# create pandemic
+
 
 pandemic = Pandemic()
-
-"""people = [Person() for i in range(100)]
-people[0].get_infected()
-grid = Grid(people, h_size=200, v_size=200)"""
-
 # set frame rate
 clock = pygame.time.Clock()
 font = pygame.font.Font("freesansbold.ttf", 32)
 # pygame loop
 animating = True
+pausing = False
 while animating:
-    # set background color
-    SCREEN.fill(COLORS["background"])
+    if not pausing:
+        # set background color
+        SCREEN.fill(COLORS["background"])
 
-    # run pandemic
-    pandemic.run()
+        # run pandemic
+        pandemic.run()
 
-    # update the screen (and the clock)
-    clock.tick()
-    clock_string = str(math.floor(clock.get_fps()))
-    text = font.render(clock_string, True, COLOR_DEFINITIONS["blue"], COLORS["background"])
-    text_box = text.get_rect(topleft=(10, 10))
-    SCREEN.blit(text, text_box)
-    pygame.display.flip()
+        # update the screen (and the clock)
+        clock.tick()
+        clock_string = str(math.floor(clock.get_fps()))
+        text = font.render(clock_string, True, COLOR_DEFINITIONS["blue"], COLORS["background"])
+        text_box = text.get_rect(topleft=(10, 10))
+        SCREEN.blit(text, text_box)
+        pygame.display.flip()
 
     # track user interaction
     for event in pygame.event.get():
@@ -202,3 +235,10 @@ while animating:
             # escape key to close the animation
             if event.key == pygame.K_ESCAPE:
                 animating = False
+            # return key to start with a new pandemic
+            if event.key == pygame.K_RETURN:
+                pausing = False
+                pandemic = Pandemic()
+            # space bar to (=)un-)pause the animation
+            if event.key == pygame.K_SPACE:
+                pausing = not pausing
