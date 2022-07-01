@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+import sys
 
 pygame.init()
 
@@ -141,7 +142,7 @@ class Pandemic:
         self.size = size
         self.speed = speed
         self.infect_dist = infect_dist
-        self.recover_time = immune_time
+        self.recover_time = recover_time
         self.immune_time = immune_time
         self.prob_catch = prob_catch
         self.prob_death = prob_death
@@ -171,7 +172,7 @@ class Pandemic:
             # create lists of all/infected/healthy people in the area (in a grid)
             people_in_area = []
             for index in c.get_neighboring_cells(self.grid.n_rows, self.grid.n_cols):
-                people_in_area += self.grid.cells[index].people
+                people_in_area += self.grid.cells[index-1].people
                 infected_people = [p for p in people_in_area if p.state == "infected"]
                 healthy_people = [p for p in people_in_area if p.state == "healthy"]
                 if len(healthy_people) == 0:
@@ -187,7 +188,7 @@ class Pandemic:
 
     def run(self):
         self.update_grid()
-        self.slowly_infect_people()
+        self.infect_people()
 
         for p in self.people:
             if p.state == "infected":
@@ -199,46 +200,50 @@ class Pandemic:
             p.show(self.size)
 
 # create pandemic
+def game():
 
+    pandemic = Pandemic()
+    # set frame rate
+    clock = pygame.time.Clock()
+    font = pygame.font.Font("freesansbold.ttf", 32)
+    # pygame loop
+    animating = True
+    pausing = False
+    while animating:
+        if not pausing:
+            # set background color
+            SCREEN.fill(COLORS["background"])
 
-pandemic = Pandemic()
-# set frame rate
-clock = pygame.time.Clock()
-font = pygame.font.Font("freesansbold.ttf", 32)
-# pygame loop
-animating = True
-pausing = False
-while animating:
-    if not pausing:
-        # set background color
-        SCREEN.fill(COLORS["background"])
+            # run pandemic
+            pandemic.run()
 
-        # run pandemic
-        pandemic.run()
+            # update the screen (and the clock)
+            clock.tick()
+            clock_string = str(math.floor(clock.get_fps()))
+            text = font.render(clock_string, True, COLOR_DEFINITIONS["blue"], COLORS["background"])
+            text_box = text.get_rect(topleft=(10, 10))
+            SCREEN.blit(text, text_box)
+            pygame.display.flip()
 
-        # update the screen (and the clock)
-        clock.tick()
-        clock_string = str(math.floor(clock.get_fps()))
-        text = font.render(clock_string, True, COLOR_DEFINITIONS["blue"], COLORS["background"])
-        text_box = text.get_rect(topleft=(10, 10))
-        SCREEN.blit(text, text_box)
-        pygame.display.flip()
-
-    # track user interaction
-    for event in pygame.event.get():
-        # user closes the pygame window
-        if event.type == pygame.QUIT:
-            animating = False
-
-        # user presses keys on keyboard
-        if event.type == pygame.KEYDOWN:
-            # escape key to close the animation
-            if event.key == pygame.K_ESCAPE:
+        # track user interaction
+        for event in pygame.event.get():
+            # user closes the pygame window
+            if event.type == pygame.QUIT:
                 animating = False
-            # return key to start with a new pandemic
-            if event.key == pygame.K_RETURN:
-                pausing = False
-                pandemic = Pandemic()
-            # space bar to (=)un-)pause the animation
-            if event.key == pygame.K_SPACE:
-                pausing = not pausing
+
+            # user presses keys on keyboard
+            if event.type == pygame.KEYDOWN:
+                # escape key to close the animation
+                if event.key == pygame.K_ESCAPE:
+                    animating = False
+                # return key to start with a new pandemic
+                if event.key == pygame.K_RETURN:
+                    pausing = False
+                    pandemic = Pandemic()
+                # space bar to (=)un-)pause the animation
+                if event.key == pygame.K_SPACE:
+                    pausing = not pausing
+
+def main():
+    game()
+main()
