@@ -1,7 +1,6 @@
 import pygame
 import random
 import math
-import sys
 
 pygame.init()
 
@@ -123,20 +122,20 @@ class Person:
             self.state = "healthy"
 
     def die(self, probability=0.000001):                # probability initializing parameter = mortality rate.
-        if random.uniform(0, 1) < probability:     # randomly choosing a number between 0 and 1 (random.uniform(0, 1) will 0.1% likely to be less than 0.001 (currently set to 0.001 = 0.1%)
+        if random.uniform(0, 1) < probability:     # randomly choosing a number between 0 and 1 (random.uniform(0, 1) will 0.1% likely to be less than 0.001
             self.state = "dead"
 
 
 class Pandemic:
     def __init__(self,
-                 n_people=500,
+                 n_people=1000,
                  size=3,
                  speed=0.03,
                  infect_dist=5,
-                 recover_time=1000,
-                 immune_time=1000,
+                 recover_time=700,
+                 immune_time=700,
                  prob_catch=0.1,
-                 prob_death=0
+                 prob_death=0.0001
                  ):
         self.people = [Person() for i in range(n_people)]
         self.size = size
@@ -188,7 +187,7 @@ class Pandemic:
 
     def run(self):
         self.update_grid()
-        self.infect_people()
+        self.slowly_infect_people()
 
         for p in self.people:
             if p.state == "infected":
@@ -198,6 +197,7 @@ class Pandemic:
                 p.lose_immunity()
             p.move(self.speed)
             p.show(self.size)
+
 
 # create pandemic
 def game():
@@ -244,6 +244,9 @@ def game():
                 if event.key == pygame.K_SPACE:
                     pausing = not pausing
 
+
 def main():
     game()
+
+
 main()
